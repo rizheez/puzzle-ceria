@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'id.edukasianak.puzzlekata',
   appName: 'Puzzle Kata Ceria',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
 };
 
 export default config;
