@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Puzzle Kata Ceria</string>
+    <string name="title_activity_main">Puzzle Kata Ceria</string>
+    <string name="package_name">id.edukasianak.puzzlekata</string>
+    <string name="custom_url_scheme">id.edukasianak.puzzlekata</string>
+</resources>

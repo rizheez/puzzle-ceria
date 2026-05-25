@@ -41,7 +41,7 @@ const initialProgress: GameProgress = {
   unlockedLevelId: 1,
   totalStars: 0,
   completedLevelIds: [],
-  isMusicEnabled: false,
+  isMusicEnabled: true,
   isSoundEnabled: true,
 };
 
@@ -67,6 +67,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       isSuccessModalOpen: false,
       shouldShake: false,
     });
+    setMusicEnabled(progress.isMusicEnabled);
   },
 
   startGame: async (playerName) => {
@@ -193,7 +194,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetProgress: async () => {
     await clearProgress();
-    setMusicEnabled(false);
+    setMusicEnabled(initialProgress.isMusicEnabled);
     set({
       ...initialProgress,
       selectedLetters: createEmptyAnswer(initialProgress.currentLevelId),
