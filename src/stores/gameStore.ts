@@ -16,10 +16,17 @@ interface Feedback {
   message: string;
 }
 
+interface LetterHint {
+  letter: string;
+  slotIndex: number;
+  slotNumber: number;
+}
+
 interface GameState extends GameProgress {
   isLoaded: boolean;
   selectedLetters: Array<SelectedLetter | null>;
   feedback: Feedback;
+  wrongAttemptCount: number;
   isSuccessModalOpen: boolean;
   shouldShake: boolean;
   loadSavedProgress: () => Promise<void>;
@@ -46,12 +53,14 @@ const initialProgress: GameProgress = {
 };
 
 const emptyFeedback: Feedback = { kind: 'idle', message: '' };
+const HINT_ATTEMPT_THRESHOLD = 2;
 
 export const useGameStore = create<GameState>((set, get) => ({
   ...initialProgress,
   isLoaded: false,
   selectedLetters: createEmptyAnswer(1),
   feedback: emptyFeedback,
+  wrongAttemptCount: 0,
   isSuccessModalOpen: false,
   shouldShake: false,
 
@@ -64,6 +73,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       isLoaded: true,
       selectedLetters: createEmptyAnswer(progress.currentLevelId),
       feedback: emptyFeedback,
+      wrongAttemptCount: 0,
       isSuccessModalOpen: false,
       shouldShake: false,
     });
@@ -81,6 +91,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...progress,
       selectedLetters: createEmptyAnswer(progress.currentLevelId),
       feedback: { kind: 'success', message: `Selamat bermain, ${progress.playerName}!` },
+      wrongAttemptCount: 0,
       isSuccessModalOpen: false,
       shouldShake: false,
     });
@@ -115,7 +126,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetAnswer: () => {
     playEffect('tap', get().isSoundEnabled);
-    set({ selectedLetters: createEmptyAnswer(get().currentLevelId), feedback: emptyFeedback, shouldShake: false });
+    set({ selectedLetters: createEmptyAnswer(get().currentLevelId), feedback: emptyFeedback, wrongAttemptCount: 0, shouldShake: false });
   },
 
   checkAnswer: async () => {
@@ -124,15 +135,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     const answer = state.selectedLetters.map((selectedLetter) => selectedLetter?.letter ?? '').join('').toUpperCase();
 
     if (answer.length < level.word.length) {
+      const wrongAttemptCount = state.wrongAttemptCount + 1;
+
       playEffect('wrong', state.isSoundEnabled);
-      set({ feedback: { kind: 'warning', message: 'Susun hurufnya dulu ya!' }, shouldShake: true });
+      set({ feedback: { kind: 'warning', message: 'Susun hurufnya dulu ya!' }, wrongAttemptCount, shouldShake: true });
       resetShake(set);
       return;
     }
 
     if (answer !== level.word) {
+      const wrongAttemptCount = state.wrongAttemptCount + 1;
+      const letterHint = getLetterHint(level.word, state.selectedLetters);
+      const message = wrongAttemptCount >= HINT_ATTEMPT_THRESHOLD && letterHint ? `Belum tepat, isi kotak ke-${letterHint.slotNumber} dengan huruf ${letterHint.letter} ya!` : 'Hampir benar, coba lagi ya!';
+
       playEffect('wrong', state.isSoundEnabled);
-      set({ feedback: { kind: 'error', message: 'Hampir benar, coba lagi ya!' }, shouldShake: true });
+      set({ feedback: { kind: 'error', message }, wrongAttemptCount, shouldShake: true });
       resetShake(set);
       return;
     }
@@ -150,6 +167,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       unlockedLevelId,
       totalStars,
       feedback: { kind: 'success', message: 'Hebat! Jawaban kamu benar!' },
+      wrongAttemptCount: 0,
       isSuccessModalOpen: true,
       shouldShake: false,
     });
@@ -164,6 +182,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       currentLevelId: nextLevelId,
       selectedLetters: createEmptyAnswer(nextLevelId),
+      wrongAttemptCount: 0,
       feedback:
         state.currentLevelId === levels.length
           ? { kind: 'success', message: 'Keren! Semua level sudah selesai!' }
@@ -199,6 +218,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...initialProgress,
       selectedLetters: createEmptyAnswer(initialProgress.currentLevelId),
       feedback: emptyFeedback,
+      wrongAttemptCount: 0,
       isSuccessModalOpen: false,
       shouldShake: false,
     });
@@ -211,6 +231,20 @@ function getCurrentLevel(levelId: number) {
 
 function createEmptyAnswer(levelId: number): Array<SelectedLetter | null> {
   return Array.from({ length: getCurrentLevel(levelId).word.length }, () => null);
+}
+
+function getLetterHint(word: string, selectedLetters: Array<SelectedLetter | null>): LetterHint | undefined {
+  const mismatchIndex = selectedLetters.findIndex((selectedLetter, index) => selectedLetter?.letter !== word[index]);
+
+  if (mismatchIndex === -1) {
+    return undefined;
+  }
+
+  return {
+    letter: word[mismatchIndex],
+    slotIndex: mismatchIndex,
+    slotNumber: mismatchIndex + 1,
+  };
 }
 
 function toProgress(state: GameProgress): GameProgress {
