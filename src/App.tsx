@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { pauseAllAudio, setMusicEnabled } from './lib/audio';
 import { GamePage } from './pages/GamePage';
 import { StartPage } from './pages/StartPage';
 import { useGameStore } from './stores/gameStore';
@@ -16,6 +17,29 @@ function App() {
   useEffect(() => {
     void loadSavedProgress();
   }, [loadSavedProgress]);
+
+  useEffect(() => {
+    const pauseAudio = () => pauseAllAudio();
+    const resumeMusic = () => setMusicEnabled(isMusicEnabled);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        pauseAudio();
+        return;
+      }
+
+      resumeMusic();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', pauseAudio);
+    window.addEventListener('pageshow', resumeMusic);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', pauseAudio);
+      window.removeEventListener('pageshow', resumeMusic);
+    };
+  }, [isMusicEnabled]);
 
   if (!isLoaded) {
     return (

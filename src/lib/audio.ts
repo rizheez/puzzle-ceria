@@ -16,6 +16,7 @@ let audioContext: AudioContext | null = null;
 let backgroundMusic: HTMLAudioElement | null = null;
 let rightAnswerSound: HTMLAudioElement | null = null;
 let wrongAnswerSound: HTMLAudioElement | null = null;
+const activeEffectSounds = new Set<HTMLAudioElement>();
 
 export function playEffect(kind: AudioKind, isEnabled: boolean): void {
   if (!isEnabled) {
@@ -48,7 +49,16 @@ export function setMusicEnabled(isEnabled: boolean): void {
     return;
   }
 
-  stopMusic();
+  pauseMusic();
+}
+
+export function pauseAllAudio(): void {
+  pauseMusic();
+  stopActiveEffectSounds();
+
+  if (audioContext?.state === 'running') {
+    void audioContext.suspend();
+  }
 }
 
 async function startMusic(): Promise<void> {
@@ -61,17 +71,16 @@ async function startMusic(): Promise<void> {
   try {
     await music.play();
   } catch {
-    stopMusic();
+    pauseMusic();
   }
 }
 
-function stopMusic(): void {
+function pauseMusic(): void {
   if (!backgroundMusic) {
     return;
   }
 
   backgroundMusic.pause();
-  backgroundMusic.currentTime = 0;
 }
 
 function getBackgroundMusic(): HTMLAudioElement {
@@ -96,10 +105,13 @@ async function playAnswerSound(kind: 'correct' | 'wrong'): Promise<void> {
   }
 
   playableSound.volume = ANSWER_EFFECT_VOLUME;
+  activeEffectSounds.add(playableSound);
+  playableSound.addEventListener('ended', () => activeEffectSounds.delete(playableSound), { once: true });
 
   try {
     await playableSound.play();
   } catch {
+    activeEffectSounds.delete(playableSound);
     return;
   }
 }
@@ -126,6 +138,14 @@ function createEffectAudio(src: string): HTMLAudioElement {
   audio.preload = 'auto';
 
   return audio;
+}
+
+function stopActiveEffectSounds(): void {
+  activeEffectSounds.forEach((sound) => {
+    sound.pause();
+    sound.currentTime = 0;
+  });
+  activeEffectSounds.clear();
 }
 
 function getAudioContext(): AudioContext {
