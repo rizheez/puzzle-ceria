@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tauri & Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/bin/
+
+# Capacitor / Android build artifacts
+android/app/build/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.plugins.json

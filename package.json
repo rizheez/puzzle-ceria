@@ -11,7 +11,8 @@
     "cap:add:android": "cap add android",
     "cap:sync": "npm run build && cap sync",
     "cap:sync:android": "npm run build && cap sync android",
-    "cap:open:android": "cap open android"
+    "cap:open:android": "cap open android",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@capacitor/android": "latest",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "latest",
+    "@tauri-apps/cli": "^2.11.2",
     "@types/howler": "latest",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
